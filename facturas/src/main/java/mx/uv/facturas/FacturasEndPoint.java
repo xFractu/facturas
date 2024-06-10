@@ -1,17 +1,7 @@
 package mx.uv.facturas;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
-import org.springframework.ws.server.endpoint.annotation.Endpoint;
-import org.springframework.ws.server.endpoint.annotation.PayloadRoot;
-import org.springframework.ws.server.endpoint.annotation.RequestPayload;
-import org.springframework.ws.server.endpoint.annotation.ResponsePayload;
-
+import mx.uv.facturas.Modelo.Factura;
+import mx.uv.facturas.ORM.IFactura;
 import mx.uv.t4is.facturas.GenerarFacturaRequest;
 import mx.uv.t4is.facturas.GenerarFacturaResponse;
 import mx.uv.t4is.facturas.GenerarFacturaResponse.Productos;
@@ -19,30 +9,41 @@ import mx.uv.t4is.facturas.GenerarFacturaResponse.Productos.Producto;
 import mx.uv.t4is.facturas.RecuperarFacturaRequest;
 import mx.uv.t4is.facturas.RecuperarFacturaResponse;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.ws.server.endpoint.annotation.Endpoint;
+import org.springframework.ws.server.endpoint.annotation.PayloadRoot;
+import org.springframework.ws.server.endpoint.annotation.RequestPayload;
+import org.springframework.ws.server.endpoint.annotation.ResponsePayload;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 @Endpoint
 public class FacturasEndPoint {
+
+    @Autowired
+    private IFactura iFactura;
 
     private Map<String, GenerarFacturaResponse> facturas = new HashMap<>();
 
     @PayloadRoot(localPart = "generarFacturaRequest", namespace = "t4is.uv.mx/facturas")
     @ResponsePayload
     public GenerarFacturaResponse generarFactura(@RequestPayload GenerarFacturaRequest request) {
-
-
         GenerarFacturaResponse response = new GenerarFacturaResponse();
         Productos productosResponse = new Productos();
 
-        String uuid = UUID.randomUUID().toString(); // Generar un UUID único
-
+        String uuid = UUID.randomUUID().toString();
         double precioTotal = 0;
+        List<Factura.Producto> productos = new ArrayList<>();
 
         for (GenerarFacturaRequest.Productos.Producto productoRequest : request.getProductos().getProducto()) {
             Producto producto = new Producto();
-            System.out.println(productoRequest.getNombre());
-            System.out.println(productoRequest.getCantidad());
-            System.out.println(productoRequest.getPrecioUnitario());
-
-
             producto.setNombre(productoRequest.getNombre());
             producto.setCantidad(productoRequest.getCantidad());
             producto.setPrecioUnitario(productoRequest.getPrecioUnitario());
@@ -51,6 +52,7 @@ public class FacturasEndPoint {
             precioTotal += totalProducto;
 
             productosResponse.getProducto().add(producto);
+            productos.add(new Factura.Producto(productoRequest.getNombre(), (int) productoRequest.getCantidad(), BigDecimal.valueOf(productoRequest.getPrecioUnitario())));
         }
 
         response.setUUID(uuid);
@@ -64,10 +66,18 @@ public class FacturasEndPoint {
         GenerarFacturaResponse.DatosVendedor datosVendedor = new GenerarFacturaResponse.DatosVendedor();
         datosVendedor.setNombre(request.getDatosVendedor().getNombre());
         datosVendedor.setDireccion(request.getDatosVendedor().getDireccion());
-
         response.setDatosVendedor(datosVendedor);
 
-        facturas.put(uuid, response); // Guardar factura en el mapa
+        facturas.put(uuid, response);
+
+        Factura factura = new Factura();
+        factura.setUuid(uuid);
+        factura.setPrecioTotal(BigDecimal.valueOf(precioTotal));
+        factura.setFechaGeneracion(LocalDateTime.now());
+        factura.setProductos(productos);
+        factura.setDatosVendedor(new Factura.DatosVendedor(request.getDatosVendedor().getNombre(), request.getDatosVendedor().getDireccion()));
+
+        iFactura.save(factura);
 
         return response;
     }
@@ -77,46 +87,32 @@ public class FacturasEndPoint {
     public RecuperarFacturaResponse recuperarFactura(@RequestPayload RecuperarFacturaRequest request) {
         RecuperarFacturaResponse response = new RecuperarFacturaResponse();
 
-        System.out.println(request.getUUID());
-
-        GenerarFacturaResponse factura = facturas.get(request.getUUID());
+        Factura factura = iFactura.findByUuid(request.getUUID());
         if (factura != null) {
-            response.setUUID(factura.getUUID());
-
-            // Crear un nuevo objeto RecuperarFacturaResponse.Productos
+            response.setUUID(factura.getUuid());
             RecuperarFacturaResponse.Productos productosResponse = new RecuperarFacturaResponse.Productos();
 
-            // Copiar los productos del objeto GenerarFacturaResponse.Productos al nuevo objeto
-            for (GenerarFacturaResponse.Productos.Producto producto : factura.getProductos().getProducto()) {
+            for (Factura.Producto producto : factura.getProductos()) {
                 RecuperarFacturaResponse.Productos.Producto nuevoProducto = new RecuperarFacturaResponse.Productos.Producto();
                 nuevoProducto.setNombre(producto.getNombre());
                 nuevoProducto.setCantidad(producto.getCantidad());
-                nuevoProducto.setPrecioUnitario(producto.getPrecioUnitario());
+                nuevoProducto.setPrecioUnitario(producto.getPrecioUnitario().doubleValue());
                 productosResponse.getProducto().add(nuevoProducto);
             }
 
-            // Establecer el nuevo objeto Productos en la respuesta
             response.setProductos(productosResponse);
 
-            // Crear un nuevo objeto RecuperarFacturaResponse.DatosVendedor
             RecuperarFacturaResponse.DatosVendedor datosVendedorResponse = new RecuperarFacturaResponse.DatosVendedor();
             datosVendedorResponse.setNombre(factura.getDatosVendedor().getNombre());
             datosVendedorResponse.setDireccion(factura.getDatosVendedor().getDireccion());
 
-            // Establecer el nuevo objeto DatosVendedor en la respuesta
             response.setDatosVendedor(datosVendedorResponse);
-
-            // Establecer el precio total y la fecha de generación en la respuesta
-            response.setPrecioTotal(factura.getPrecioTotal());;
-            response.setFechaGeneracion(factura.getFechaGeneracion());
+            response.setPrecioTotal(factura.getPrecioTotal().doubleValue());
+            response.setFechaGeneracion(factura.getFechaGeneracion().toString());
         } else {
-            // Manejar caso donde la factura no se encuentra
             response.setUUID("Factura no encontrada");
         }
 
-        System.out.println("Recuperar factura: " + response.getUUID());
-
         return response;
     }
-
 }
