@@ -27,20 +27,28 @@ public class FacturasEndPoint {
     @PayloadRoot(localPart = "generarFacturaRequest", namespace = "t4is.uv.mx/facturas")
     @ResponsePayload
     public GenerarFacturaResponse generarFactura(@RequestPayload GenerarFacturaRequest request) {
+
+
         GenerarFacturaResponse response = new GenerarFacturaResponse();
         Productos productosResponse = new Productos();
+
         String uuid = UUID.randomUUID().toString(); // Generar un UUID único
 
-        BigDecimal precioTotal = BigDecimal.ZERO;
+        double precioTotal = 0;
 
         for (GenerarFacturaRequest.Productos.Producto productoRequest : request.getProductos().getProducto()) {
             Producto producto = new Producto();
+            System.out.println(productoRequest.getNombre());
+            System.out.println(productoRequest.getCantidad());
+            System.out.println(productoRequest.getPrecioUnitario());
+
+
             producto.setNombre(productoRequest.getNombre());
             producto.setCantidad(productoRequest.getCantidad());
             producto.setPrecioUnitario(productoRequest.getPrecioUnitario());
 
-            BigDecimal totalProducto = productoRequest.getPrecioUnitario().multiply(BigDecimal.valueOf(productoRequest.getCantidad().intValue()));
-            precioTotal = precioTotal.add(totalProducto);
+            double totalProducto = productoRequest.getPrecioUnitario() * productoRequest.getCantidad();
+            precioTotal += totalProducto;
 
             productosResponse.getProducto().add(producto);
         }
@@ -68,6 +76,8 @@ public class FacturasEndPoint {
     @ResponsePayload
     public RecuperarFacturaResponse recuperarFactura(@RequestPayload RecuperarFacturaRequest request) {
         RecuperarFacturaResponse response = new RecuperarFacturaResponse();
+
+        System.out.println(request.getUUID());
 
         GenerarFacturaResponse factura = facturas.get(request.getUUID());
         if (factura != null) {
@@ -97,12 +107,14 @@ public class FacturasEndPoint {
             response.setDatosVendedor(datosVendedorResponse);
 
             // Establecer el precio total y la fecha de generación en la respuesta
-            response.setPrecioTotal(factura.getPrecioTotal());
+            response.setPrecioTotal(factura.getPrecioTotal());;
             response.setFechaGeneracion(factura.getFechaGeneracion());
         } else {
             // Manejar caso donde la factura no se encuentra
             response.setUUID("Factura no encontrada");
         }
+
+        System.out.println("Recuperar factura: " + response.getUUID());
 
         return response;
     }

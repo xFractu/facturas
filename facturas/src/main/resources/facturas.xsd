@@ -13,8 +13,8 @@
                                 <xs:complexType>
                                     <xs:sequence>
                                         <xs:element name="Nombre" type="xs:string"/>
-                                        <xs:element name="Cantidad" type="xs:integer"/>
-                                        <xs:element name="PrecioUnitario" type="xs:decimal"/>
+                                        <xs:element name="Cantidad" type="xs:double"/>
+                                        <xs:element name="PrecioUnitario" type="xs:double"/>
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
@@ -44,8 +44,8 @@
                                 <xs:complexType>
                                     <xs:sequence>
                                         <xs:element name="Nombre" type="xs:string"/>
-                                        <xs:element name="Cantidad" type="xs:integer"/>
-                                        <xs:element name="PrecioUnitario" type="xs:decimal"/>
+                                        <xs:element name="Cantidad" type="xs:double"/>
+                                        <xs:element name="PrecioUnitario" type="xs:double"/>
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
@@ -60,7 +60,7 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
-                <xs:element name="PrecioTotal" type="xs:decimal"/>
+                <xs:element name="PrecioTotal" type="xs:double"/>
                 <xs:element name="FechaGeneracion" type="xs:string"/>
             </xs:sequence>
         </xs:complexType>
@@ -85,8 +85,8 @@
                                 <xs:complexType>
                                     <xs:sequence>
                                         <xs:element name="Nombre" type="xs:string"/>
-                                        <xs:element name="Cantidad" type="xs:integer"/>
-                                        <xs:element name="PrecioUnitario" type="xs:decimal"/>
+                                        <xs:element name="Cantidad" type="xs:double"/>
+                                        <xs:element name="PrecioUnitario" type="xs:double"/>
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
@@ -101,7 +101,7 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
-                <xs:element name="PrecioTotal" type="xs:decimal"/>
+                <xs:element name="PrecioTotal" type="xs:double"/>
                 <xs:element name="FechaGeneracion" type="xs:string"/>
             </xs:sequence>
         </xs:complexType>
