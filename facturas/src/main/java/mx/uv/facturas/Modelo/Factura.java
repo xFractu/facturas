@@ -13,8 +13,10 @@ public class Factura {
     private BigDecimal precioTotal;
     private LocalDateTime fechaGeneracion;
 
-    @ElementCollection
+    
+    @ElementCollection(fetch = FetchType.EAGER)
     private List<Producto> productos;
+
 
     @Embedded
     private DatosVendedor datosVendedor;
